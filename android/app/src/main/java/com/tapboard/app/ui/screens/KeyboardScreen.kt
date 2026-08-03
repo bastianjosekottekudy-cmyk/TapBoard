@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -52,7 +53,15 @@ fun KeyboardScreen(viewModel: TapBoardViewModel) {
     var showFKeys by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
 
+    // Leaving Keys (or disposing) must not leave Ctrl/Shift held on the host HID stack.
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.input.clearModifiers()
+        }
+    }
+
     fun toggleMod(mask: Int) {
+        if (!connected) return
         val down = mods and mask == 0
         mods = if (down) mods or mask else mods and mask.inv()
         viewModel.input.setModifier(mask, down)
@@ -62,6 +71,8 @@ fun KeyboardScreen(viewModel: TapBoardViewModel) {
         if (!connected) return
         haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         viewModel.input.tapKey(hid)
+        // One-shot sticky mods: cleared after the key so a PC keyboard is not left shifted/ctrl'd.
+        mods = 0
     }
 
     Column(
@@ -72,7 +83,11 @@ fun KeyboardScreen(viewModel: TapBoardViewModel) {
     ) {
         Text("Keyboard", style = MaterialTheme.typography.headlineMedium)
         Text(
-            if (connected) "Tap keys or type in the field" else "Connect first",
+            if (connected) {
+                "Tap keys or type below. Ctrl/Shift/Alt/Win stick for one key, then release."
+            } else {
+                "Connect first"
+            },
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(10.dp))
@@ -87,6 +102,7 @@ fun KeyboardScreen(viewModel: TapBoardViewModel) {
                     }
                 }
                 text = new
+                mods = 0
             },
             enabled = connected,
             modifier = Modifier.fillMaxWidth(),

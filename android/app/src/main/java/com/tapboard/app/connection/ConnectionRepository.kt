@@ -42,14 +42,18 @@ class ConnectionRepository(
         bluetoothManager.setListeners(
             onConnectionChanged = { connected, name ->
                 if (connected) {
+                    input.resetLocalState()
                     _state.value = ConnectionState.Connected(name ?: "Bluetooth host")
                     startForeground()
                 } else if (_state.value is ConnectionState.Connected) {
+                    // Link already dropped — cannot send an all-zero report.
+                    input.resetLocalState()
                     _state.value = ConnectionState.Disconnected
                     stopForeground()
                 }
             },
             onError = { msg ->
+                input.resetLocalState()
                 _state.value = ConnectionState.Error(msg)
             }
         )
@@ -86,6 +90,8 @@ class ConnectionRepository(
     }
 
     fun disconnect() {
+        // Release HID keys/mods while the host is still connected, then drop the link.
+        input.releaseAll()
         bluetoothManager.disconnect()
         _state.value = ConnectionState.Disconnected
         stopForeground()

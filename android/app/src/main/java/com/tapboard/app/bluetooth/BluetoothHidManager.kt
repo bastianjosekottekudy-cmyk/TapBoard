@@ -124,10 +124,16 @@ class BluetoothHidManager(private val context: Context) {
     @SuppressLint("MissingPermission")
     fun disconnect() {
         val hid = hidRef.get()
-        val host = hostRef.getAndSet(null)
+        val host = hostRef.get()
+        // Best-effort idle reports before unlinking (ConnectionRepository also calls releaseAll).
         if (hid != null && host != null) {
-            runCatching { hid.disconnect(host) }
+            runCatching {
+                hid.sendReport(host, HidDescriptors.ID_KEYBOARD, HidDescriptors.keyboardReport(0, intArrayOf()))
+                hid.sendReport(host, HidDescriptors.ID_MOUSE, HidDescriptors.mouseReport(0, 0, 0, 0))
+                hid.disconnect(host)
+            }
         }
+        hostRef.set(null)
         onConnectionChanged?.invoke(false, null)
     }
 

@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Bluetooth HID input path for touchpad and keyboard.
+ *
+ * Host OSes merge modifier state across HID keyboards, so sticky Ctrl/Shift/Alt/Win
+ * from TapBoard will make a physical keyboard misbehave until released.
  */
 class InputController(
     private val state: StateFlow<ConnectionState>,
@@ -66,22 +69,28 @@ class InputController(
     }
 
     fun keyDown(hid: Int) {
-        pressedKeys.add(hid)
+        pressedKeys.add(hid and 0xFF)
         flushKeyboard()
     }
 
     fun keyUp(hid: Int) {
-        pressedKeys.remove(hid)
+        pressedKeys.remove(hid and 0xFF)
         flushKeyboard()
     }
 
+    /**
+     * Momentary key press. Sticky modifiers (Ctrl/Shift/…) apply for this key only,
+     * then are cleared so a physical keyboard on the host is not left with mods held.
+     */
     fun tapKey(hid: Int, extraMods: Int = 0) {
-        val previous = modifierMask
-        modifierMask = previous or extraMods
+        val combined = modifierMask or extraMods
+        modifierMask = combined
         keyDown(hid)
         keyUp(hid)
-        modifierMask = previous
-        flushKeyboard()
+        if (combined != 0) {
+            modifierMask = 0
+            flushKeyboard()
+        }
     }
 
     fun typeChar(ch: Char) {
@@ -93,10 +102,38 @@ class InputController(
         text.forEach { typeChar(it) }
     }
 
+    /** Clear modifiers only (e.g. leaving the keyboard screen). */
+    fun clearModifiers() {
+        if (modifierMask == 0) return
+        modifierMask = 0
+        flushKeyboard()
+    }
+
+    /**
+     * Release all keys, modifiers, and mouse buttons on the host, then clear local state.
+     * Call while still connected, before tearing down the HID link.
+     */
+    fun releaseAll() {
+        modifierMask = 0
+        pressedKeys.clear()
+        mouseButtons = 0
+        if (isConnected) {
+            bluetooth.sendKeyboard(0)
+            bluetooth.sendMouse(0, 0, 0, 0)
+        }
+    }
+
+    /** Local-only reset when the link already dropped (cannot send a report). */
+    fun resetLocalState() {
+        modifierMask = 0
+        pressedKeys.clear()
+        mouseButtons = 0
+    }
+
     private fun flushKeyboard() {
         if (!isConnected) return
-        val keys = pressedKeys.take(6).toIntArray()
-        bluetooth.sendKeyboard(modifierMask, *keys)
+        val keys = pressedKeys.take(6).map { it and 0xFF }.toIntArray()
+        bluetooth.sendKeyboard(modifierMask and 0xFF, *keys)
     }
 
     companion object {
