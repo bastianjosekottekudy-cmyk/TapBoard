@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TapBoard</string>
+    <string name="notification_channel_name">Connection</string>
+    <string name="notification_title">TapBoard connected</string>
+    <string name="notification_text">Remote keyboard and mouse is active</string>
+</resources>

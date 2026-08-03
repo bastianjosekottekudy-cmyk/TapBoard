@@ -1,0 +1,32 @@
+# Play Store description — copy/paste
+
+## Short description
+
+Remote Bluetooth & Wi‑Fi keyboard and mouse for your PC and more.
+
+## Full description
+
+TapBoard turns your Android phone into a precise remote keyboard and mouse.
+
+Bluetooth HID
+Pair with Windows, macOS, Linux, Chromebooks, and many smart TVs that accept Bluetooth keyboards — no PC software required.
+
+Wi‑Fi mode
+Install the free TapBoard Companion on your computer for a rock-solid LAN connection when Bluetooth HID isn’t supported by your phone’s chipset.
+
+Download TapBoard Companion (Windows):
+https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest
+
+Direct download:
+https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/tapboard-companion.exe
+
+Built for real use
+• Multi-touch touchpad with scroll and right-click
+• Full on-screen keyboard with modifiers and function keys
+• Media and presenter controls (arrows, Esc, volume, play/pause)
+• Adjustable sensitivity, haptics, and keep-screen-on
+
+Privacy-first
+No account. No ads. No cloud telemetry. Input stays on your device or local network.
+
+Requires Android 9+. Wi‑Fi mode needs TapBoard Companion on the same network (download link above).

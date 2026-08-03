@@ -1,0 +1,28 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
+
+# Android
+android/.gradle/
+android/**/build/
+android/local.properties
+android/*.jks
+android/keystore.properties
+android/KEYSTORE_CREDENTIALS.txt
+android/tapboard-upload.jks
+tapboard-upload.jks
+
+
+# Go
+companion/tapboard-companion
+companion/tapboard-companion.exe
+companion/dist/
+companion/vendor/
+
+# Secrets
+*.jks
+keystore.properties
+.env
