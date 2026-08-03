@@ -1,4 +1,4 @@
-# OS / IDE
+﻿# OS / IDE
 .DS_Store
 Thumbs.db
 .idea/
@@ -14,15 +14,15 @@ android/keystore.properties
 android/KEYSTORE_CREDENTIALS.txt
 android/tapboard-upload.jks
 tapboard-upload.jks
+keystore.properties
 
-
-# Go
+# Go / artifacts
 companion/tapboard-companion
 companion/tapboard-companion.exe
 companion/dist/
 companion/vendor/
+dist/
+*.apk
 
 # Secrets
-*.jks
-keystore.properties
 .env

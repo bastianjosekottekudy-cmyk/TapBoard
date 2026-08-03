@@ -9,15 +9,21 @@ Turn your Android phone into a Bluetooth + WiFi keyboard and mouse for PCs, Chro
 - Touchpad with gestures, on-screen keyboard, media / presenter controls
 - Material 3 UI, Play Store–oriented permissions and privacy posture
 
-## Download Windows Companion
+## Download
 
-Latest release (Windows `.exe`):
+| File | Link |
+|------|------|
+| **Android APK** | https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/TapBoard.apk |
+| **Windows Companion** | https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/tapboard-companion.exe |
+| **Releases page** | https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest |
 
-**https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest**
+Rebuild + replace both assets on GitHub:
 
-Direct file:
+```bash
+python scripts/publish_release.py
+```
 
-**https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/tapboard-companion.exe**
+Pushes to `master`/`main` also refresh both files via GitHub Actions.
 
 ## Repository layout
 

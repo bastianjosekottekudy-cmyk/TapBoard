@@ -38,17 +38,18 @@ func IsAdmin() bool {
 
 func FirewallReady() bool {
 	out, err := exec.Command("netsh", "advfirewall", "firewall", "show", "rule", "name="+fwRuleTCP).CombinedOutput()
-	if err != nil {
+	if err != nil || !strings.Contains(string(out), fwRuleTCP) {
 		return false
 	}
-	if !strings.Contains(string(out), fwRuleTCP) {
-		return false
+	// Require "Any" profile or explicit Public coverage — old Private-only rules fail on Public Wi‑Fi.
+	text := string(out)
+	if strings.Contains(text, "Public") || strings.Contains(strings.ToLower(text), "any") ||
+		(strings.Contains(text, "Domain") && strings.Contains(text, "Private") && strings.Contains(text, "Public")) {
+		out2, err2 := exec.Command("netsh", "advfirewall", "firewall", "show", "rule", "name="+fwRuleUDP).CombinedOutput()
+		return err2 == nil && strings.Contains(string(out2), fwRuleUDP)
 	}
-	out, err = exec.Command("netsh", "advfirewall", "firewall", "show", "rule", "name="+fwRuleUDP).CombinedOutput()
-	if err != nil {
-		return false
-	}
-	return strings.Contains(string(out), fwRuleUDP)
+	// Private+Domain only → treat as not ready so UI prompts upgrade
+	return false
 }
 
 func InstallFirewallRules() error {
@@ -61,7 +62,7 @@ func InstallFirewallRules() error {
 		"action=allow",
 		"protocol=TCP",
 		fmt.Sprintf("localport=%d", sessionPort),
-		"profile=private,domain",
+		"profile=any",
 		"enable=yes",
 	)
 	if out, err := tcp.CombinedOutput(); err != nil {
@@ -74,16 +75,21 @@ func InstallFirewallRules() error {
 		"action=allow",
 		"protocol=UDP",
 		fmt.Sprintf("localport=%d", discoveryPort),
-		"profile=private,domain",
+		"profile=any",
 		"enable=yes",
 	)
 	if out, err := udp.CombinedOutput(); err != nil {
 		return fmt.Errorf("UDP rule: %v (%s)", err, strings.TrimSpace(string(out)))
 	}
+
+	// Best-effort: mark active Wi‑Fi/Ethernet as Private so Windows is less aggressive.
+	_ = exec.Command("powershell", "-NoProfile", "-Command",
+		`Get-NetConnectionProfile | Where-Object { $_.IPv4Connectivity -ne 'NoTraffic' } | Set-NetConnectionProfile -NetworkCategory Private -ErrorAction SilentlyContinue`,
+	).Run()
+
 	return nil
 }
 
-// RelaunchElevatedFirewall starts an elevated copy that only installs firewall rules.
 func RelaunchElevatedFirewall() error {
 	exe, err := os.Executable()
 	if err != nil {

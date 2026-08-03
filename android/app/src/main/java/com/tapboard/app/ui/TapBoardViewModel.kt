@@ -39,6 +39,7 @@ class TapBoardViewModel(
     fun discoverWifi() = connection.discoverWifi()
     fun refreshBluetooth() = connection.refreshBluetoothDevices()
     fun connectWifi(host: DiscoveredWifiHost, pin: String) = connection.connectWifi(host, pin)
+    fun connectWifiManual(ip: String, pin: String) = connection.connectWifiManual(ip, pin)
     fun connectBluetooth(device: BondedBtDevice) = connection.connectBluetooth(device)
     fun disconnect() = connection.disconnect()
     fun clearError() = connection.clearError()

@@ -151,11 +151,20 @@ fun ConnectScreen(
                     }
                 }
                 LazyColumn(modifier = Modifier.padding(16.dp)) {
+                    item {
+                        ManualConnectCard(
+                            defaultPin = savedPin,
+                            onConnect = { ip, pin ->
+                                viewModel.connectWifiManual(ip, pin)
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
                     if (wifiHosts.isEmpty() && !scanning) {
                         item {
                             Column {
                                 Text(
-                                    "Run TapBoard Companion on your PC, then scan. Same Wi‑Fi required.",
+                                    "Scan finds PCs on the same Wi‑Fi. If nothing appears, use the IP shown in TapBoard Companion (manual connect above). Also tap Enable network access in the companion once.",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(8.dp))
@@ -244,6 +253,57 @@ fun ConnectScreen(
                 TextButton(onClick = { pinHost = null }) { Text("Cancel") }
             }
         )
+    }
+}
+
+@Composable
+private fun ManualConnectCard(
+    defaultPin: String,
+    onConnect: (ip: String, pin: String) -> Unit
+) {
+    var ip by remember { mutableStateOf("") }
+    var pin by remember { mutableStateOf(defaultPin) }
+    LaunchedEffect(defaultPin) {
+        if (pin.isBlank()) pin = defaultPin
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f))
+            .padding(16.dp)
+    ) {
+        Text("Connect by IP", style = MaterialTheme.typography.titleLarge)
+        Text(
+            "Use the LAN IP shown in TapBoard Companion if Scan finds nothing.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = ip,
+            onValueChange = { ip = it.trim() },
+            label = { Text("PC IP (e.g. 192.168.0.88)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = pin,
+            onValueChange = { pin = it.filter(Char::isDigit).take(6) },
+            label = { Text("6-digit PIN") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = { onConnect(ip, pin) },
+            enabled = ip.isNotBlank() && pin.length == 6,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Connect")
+        }
     }
 }
 

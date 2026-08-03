@@ -85,11 +85,11 @@ func (s *CompanionServer) Start() error {
 	s.mu.Unlock()
 
 	s.IPs = localIPv4s()
-	udp, err := net.ListenPacket("udp4", fmt.Sprintf(":%d", discoveryPort))
+	udp, err := net.ListenPacket("udp4", fmt.Sprintf("0.0.0.0:%d", discoveryPort))
 	if err != nil {
 		return fmt.Errorf("discovery port %d: %w", discoveryPort, err)
 	}
-	tcp, err := net.Listen("tcp", fmt.Sprintf(":%d", sessionPort))
+	tcp, err := net.Listen("tcp4", fmt.Sprintf("0.0.0.0:%d", sessionPort))
 	if err != nil {
 		_ = udp.Close()
 		return fmt.Errorf("session port %d: %w", sessionPort, err)

@@ -1,5 +1,7 @@
 package com.tapboard.app.wifi
 
+import android.content.Context
+import android.net.wifi.WifiManager
 import com.tapboard.app.BuildConfig
 import com.tapboard.app.connection.DiscoveredWifiHost
 import kotlinx.coroutines.Dispatchers
@@ -8,54 +10,105 @@ import kotlinx.coroutines.withTimeout
 import org.json.JSONObject
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.Inet4Address
 import java.net.InetAddress
+import java.net.InterfaceAddress
+import java.net.NetworkInterface
 import java.net.SocketTimeoutException
+import java.util.Collections
 import java.util.concurrent.atomic.AtomicReference
 
-class WifiClient {
+class WifiClient(private val appContext: Context) {
     private val sessionRef = AtomicReference<WifiSession?>(null)
 
     val isConnected: Boolean get() = sessionRef.get()?.isConnected == true
 
-    suspend fun discover(timeoutMs: Long = 2500L): List<DiscoveredWifiHost> = withContext(Dispatchers.IO) {
+    suspend fun discover(timeoutMs: Long = 4000L): List<DiscoveredWifiHost> = withContext(Dispatchers.IO) {
         val found = linkedMapOf<String, DiscoveredWifiHost>()
-        DatagramSocket().use { socket ->
-            socket.broadcast = true
-            socket.soTimeout = 400
-            val payload = Protocol.DISCOVER_MAGIC.toByteArray()
-            val broadcast = InetAddress.getByName("255.255.255.255")
-            socket.send(DatagramPacket(payload, payload.size, broadcast, Protocol.DISCOVERY_PORT))
-            // Also try subnet-local all-ones if available later; broadcast is enough for most LANs
-            val deadline = System.currentTimeMillis() + timeoutMs
-            val buf = ByteArray(2048)
-            while (System.currentTimeMillis() < deadline) {
-                try {
-                    val packet = DatagramPacket(buf, buf.size)
-                    socket.receive(packet)
-                    val text = String(packet.data, 0, packet.length)
-                    if (!text.trim().startsWith("{")) {
-                        // ignore non-JSON
-                    } else {
-                        val json = JSONObject(text)
-                        if (json.optInt("v") == Protocol.VERSION &&
-                            json.optString("type") == "discover_reply"
-                        ) {
-                            val fallback = packet.address.hostAddress
-                            val host = json.optString("host").ifBlank { fallback.orEmpty() }
-                            if (host.isNotBlank()) {
-                                val name = json.optString("name", host)
-                                val port = json.optInt("port", Protocol.SESSION_PORT)
-                                val pinRequired = json.optBoolean("pinRequired", true)
-                                found["$host:$port"] = DiscoveredWifiHost(name, host, port, pinRequired)
-                            }
+        val wifi = appContext.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        @Suppress("DEPRECATION")
+        val lock = wifi.createMulticastLock("tapboard-discover").apply {
+            setReferenceCounted(false)
+            acquire()
+        }
+        try {
+            DatagramSocket().use { socket ->
+                socket.broadcast = true
+                socket.reuseAddress = true
+                socket.soTimeout = 300
+                val payload = Protocol.DISCOVER_MAGIC.toByteArray(Charsets.UTF_8)
+
+                // Global broadcast + every IPv4 subnet broadcast (works when 255.255.255.255 is blocked)
+                val targets = linkedSetOf<InetAddress>()
+                runCatching { targets += InetAddress.getByName("255.255.255.255") }
+                for (addr in subnetBroadcasts()) {
+                    targets += addr
+                }
+                // Also poke common gateway-ish directed broadcasts from DHCP link address
+                for (target in targets) {
+                    runCatching {
+                        socket.send(DatagramPacket(payload, payload.size, target, Protocol.DISCOVERY_PORT))
+                    }
+                }
+                // Retransmit a couple times — UDP is lossy on busy Wi‑Fi
+                repeat(2) {
+                    Thread.sleep(120)
+                    for (target in targets) {
+                        runCatching {
+                            socket.send(DatagramPacket(payload, payload.size, target, Protocol.DISCOVERY_PORT))
                         }
                     }
-                } catch (_: SocketTimeoutException) {
-                    // keep polling until deadline
+                }
+
+                val deadline = System.currentTimeMillis() + timeoutMs
+                val buf = ByteArray(2048)
+                while (System.currentTimeMillis() < deadline) {
+                    try {
+                        val packet = DatagramPacket(buf, buf.size)
+                        socket.receive(packet)
+                        val text = String(packet.data, 0, packet.length, Charsets.UTF_8).trim()
+                        if (!text.startsWith("{")) continue
+                        val json = JSONObject(text)
+                        if (json.optInt("v") != Protocol.VERSION) continue
+                        if (json.optString("type") != "discover_reply") continue
+                        val fallback = packet.address.hostAddress.orEmpty()
+                        val host = json.optString("host").ifBlank { fallback }
+                        if (host.isBlank()) continue
+                        val name = json.optString("name", host)
+                        val port = json.optInt("port", Protocol.SESSION_PORT)
+                        val pinRequired = json.optBoolean("pinRequired", true)
+                        found["$host:$port"] = DiscoveredWifiHost(name, host, port, pinRequired)
+                    } catch (_: SocketTimeoutException) {
+                        // keep waiting
+                    }
+                }
+            }
+        } finally {
+            runCatching { if (lock.isHeld) lock.release() }
+        }
+        found.values.toList()
+    }
+
+    private fun subnetBroadcasts(): List<InetAddress> {
+        val out = mutableListOf<InetAddress>()
+        val ifaces = Collections.list(NetworkInterface.getNetworkInterfaces())
+        for (iface in ifaces) {
+            if (!iface.isUp || iface.isLoopback) continue
+            for (ia: InterfaceAddress in iface.interfaceAddresses) {
+                val broadcast = ia.broadcast ?: continue
+                if (broadcast is Inet4Address) out += broadcast
+                val address = ia.address
+                if (address is Inet4Address && !address.isLoopbackAddress) {
+                    // Also try directed .255 for /24 as fallback
+                    val bytes = address.address
+                    if (bytes.size == 4) {
+                        bytes[3] = 0xff.toByte()
+                        runCatching { out += InetAddress.getByAddress(bytes) }
+                    }
                 }
             }
         }
-        found.values.toList()
+        return out.distinct()
     }
 
     suspend fun connect(host: String, port: Int, pin: String): Result<Unit> = withContext(Dispatchers.IO) {
@@ -126,16 +179,6 @@ class WifiClient {
                     .put("down", down)
             )
         }
-    }
-
-    suspend fun ping(): Long? = withContext(Dispatchers.IO) {
-        val session = sessionRef.get() ?: return@withContext null
-        val t = System.currentTimeMillis()
-        runCatching {
-            session.send(JSONObject().put("v", Protocol.VERSION).put("type", "ping").put("t", t))
-            val pong = withTimeout(2000) { session.read() }
-            if (pong.optString("type") == "pong") System.currentTimeMillis() - t else null
-        }.getOrNull()
     }
 
     fun disconnect() {

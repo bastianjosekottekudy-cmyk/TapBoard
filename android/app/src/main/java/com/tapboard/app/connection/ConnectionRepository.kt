@@ -21,7 +21,7 @@ class ConnectionRepository(
     private val settings: SettingsRepository
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val wifiClient = WifiClient()
+    private val wifiClient = WifiClient(context.applicationContext)
     private val bluetoothManager = BluetoothHidManager(context)
 
     private val _mode = MutableStateFlow(ConnectionMode.Wifi)
@@ -108,6 +108,15 @@ class ConnectionRepository(
                 )
             }
         }
+    }
+
+    fun connectWifiManual(ip: String, pin: String, port: Int = 19529) {
+        val host = ip.trim()
+        if (host.isEmpty()) {
+            _state.value = ConnectionState.Error("Enter the PC IP shown in TapBoard Companion")
+            return
+        }
+        connectWifi(DiscoveredWifiHost(name = host, host = host, port = port, pinRequired = true), pin)
     }
 
     fun connectBluetooth(device: BondedBtDevice) {

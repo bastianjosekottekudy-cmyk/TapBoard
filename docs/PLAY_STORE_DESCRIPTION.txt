@@ -15,10 +15,13 @@ Wi‑Fi mode
 Install the free TapBoard Companion on your computer for a rock-solid LAN connection when Bluetooth HID isn’t supported by your phone’s chipset.
 
 Download TapBoard Companion (Windows):
-https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest
-
-Direct download:
 https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/tapboard-companion.exe
+
+Android APK (sideload / testing):
+https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/TapBoard.apk
+
+Releases page:
+https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest
 
 Built for real use
 • Multi-touch touchpad with scroll and right-click
