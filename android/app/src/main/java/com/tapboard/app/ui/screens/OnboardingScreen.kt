@@ -24,7 +24,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
@@ -33,13 +32,17 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun OnboardingScreen(onDone: () -> Unit) {
-    val pager = rememberPagerState(pageCount = { 3 })
-    val scope = rememberCoroutineScope()
     val pages = listOf(
         Triple("TapBoard", "Your phone becomes a remote keyboard and mouse for any compatible host.", "Next"),
-        Triple("Bluetooth HID", "Pair like a real keyboard with Windows, macOS, Linux, Chromebooks, and many TVs — no PC app required.", "Next"),
-        Triple("Wi‑Fi Companion", "When Bluetooth HID isn’t supported by your phone, run TapBoard Companion on your PC for a rock-solid LAN link.", "Get started")
+        Triple(
+            "Bluetooth HID",
+            "Pair like a real keyboard with Windows, macOS, Linux, Chromebooks, and many TVs — no PC app required.",
+            "Get started"
+        )
     )
+    val lastPage = pages.lastIndex
+    val pager = rememberPagerState(pageCount = { pages.size })
+    val scope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
@@ -80,7 +83,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                repeat(3) { i ->
+                repeat(pages.size) { i ->
                     val selected = pager.currentPage == i
                     Box(
                         modifier = Modifier
@@ -97,7 +100,7 @@ fun OnboardingScreen(onDone: () -> Unit) {
             Spacer(modifier = Modifier.height(20.dp))
             Button(
                 onClick = {
-                    if (pager.currentPage < 2) {
+                    if (pager.currentPage < lastPage) {
                         scope.launch { pager.animateScrollToPage(pager.currentPage + 1) }
                     } else onDone()
                 },
@@ -108,7 +111,11 @@ fun OnboardingScreen(onDone: () -> Unit) {
             ) {
                 Text(pages[pager.currentPage].third)
             }
-            AnimatedVisibility(visible = pager.currentPage < 2, enter = fadeIn(), exit = fadeOut()) {
+            AnimatedVisibility(
+                visible = pager.currentPage < lastPage,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
                 TextButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
                     Text("Skip", textAlign = TextAlign.Center)
                 }

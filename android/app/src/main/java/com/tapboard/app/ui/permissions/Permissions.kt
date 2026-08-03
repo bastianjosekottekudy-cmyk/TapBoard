@@ -25,15 +25,6 @@ fun bluetoothPermissions(): Array<String> {
     }.toTypedArray()
 }
 
-fun wifiPermissions(): Array<String> {
-    return buildList {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            add(Manifest.permission.NEARBY_WIFI_DEVICES)
-            add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }.toTypedArray()
-}
-
 @Composable
 fun RequestPermissions(
     permissions: Array<String>,

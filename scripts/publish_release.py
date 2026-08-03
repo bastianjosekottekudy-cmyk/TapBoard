@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Build TapBoard Android APK + Windows companion, upload to GitHub Releases (replace).
+"""Build TapBoard Android APK and upload to GitHub Releases (replace).
 
 Usage:
   python scripts/publish_release.py
   python scripts/publish_release.py --tag v1.0.0
-  python scripts/publish_release.py --skip-build   # upload existing artifacts only
+  python scripts/publish_release.py --skip-build
 
 Exit codes:
   0 ok
@@ -21,11 +21,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ANDROID = ROOT / "android"
-COMPANION = ROOT / "companion"
 DIST = ROOT / "dist"
 DEFAULT_TAG = "v1.0.0"
 APK_OUT = DIST / "TapBoard.apk"
-EXE_OUT = COMPANION / "tapboard-companion.exe"
 
 
 def run(cmd: list[str], cwd: Path | None = None, env: dict | None = None) -> None:
@@ -47,18 +45,6 @@ def build_apk() -> None:
     print(f"STATUS=apk {APK_OUT} ({APK_OUT.stat().st_size} bytes)", flush=True)
 
 
-def build_exe() -> None:
-    env = {"CGO_ENABLED": "0"}
-    run(
-        ["go", "build", "-ldflags=-H windowsgui", "-o", "tapboard-companion.exe", "."],
-        cwd=COMPANION,
-        env=env,
-    )
-    if not EXE_OUT.exists():
-        raise SystemExit(f"ERROR=missing exe {EXE_OUT}")
-    print(f"STATUS=exe {EXE_OUT} ({EXE_OUT.stat().st_size} bytes)", flush=True)
-
-
 def ensure_release(tag: str) -> None:
     list_proc = subprocess.run(
         ["gh", "release", "view", tag],
@@ -70,10 +56,9 @@ def ensure_release(tag: str) -> None:
         print(f"STATUS=release exists {tag}", flush=True)
         return
     notes = (
-        "## TapBoard release\n\n"
-        "- `TapBoard.apk` — Android app (sideload / testing)\n"
-        "- `tapboard-companion.exe` — Windows Wi‑Fi companion\n\n"
-        "Assets are replaced on every publish."
+        "## TapBoard (Bluetooth only)\n\n"
+        "- `TapBoard.apk` — Android Bluetooth keyboard & mouse\n\n"
+        "Asset is replaced on every publish."
     )
     run(
         [
@@ -91,28 +76,31 @@ def ensure_release(tag: str) -> None:
 
 
 def upload(tag: str) -> None:
-    run(
+    # Remove obsolete companion exe from the release if present
+    subprocess.run(
+        ["gh", "release", "delete-asset", tag, "tapboard-companion.exe", "--yes"],
+        cwd=str(ROOT),
+        capture_output=True,
+    )
+    run(["gh", "release", "upload", tag, str(APK_OUT), "--clobber"])
+    # Refresh release notes to Bluetooth-only
+    subprocess.run(
         [
             "gh",
             "release",
-            "upload",
+            "edit",
             tag,
-            str(APK_OUT),
-            str(EXE_OUT),
-            "--clobber",
-        ]
+            "--notes",
+            "## TapBoard (Bluetooth only)\n\n"
+            "- `TapBoard.apk` — Android Bluetooth keyboard & mouse\n\n"
+            "No Windows companion. Pair your phone as a Bluetooth keyboard/mouse.",
+        ],
+        cwd=str(ROOT),
+        check=False,
     )
     print(f"STATUS=uploaded {tag}", flush=True)
     print(
-        f"URL=https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/tag/{tag}",
-        flush=True,
-    )
-    print(
         "APK=https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/TapBoard.apk",
-        flush=True,
-    )
-    print(
-        "EXE=https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/tapboard-companion.exe",
         flush=True,
     )
 
@@ -125,11 +113,9 @@ def main() -> int:
     try:
         if not args.skip_build:
             build_apk()
-            build_exe()
-        else:
-            if not APK_OUT.exists() or not EXE_OUT.exists():
-                print("ERROR=artifacts missing; run without --skip-build", flush=True)
-                return 1
+        elif not APK_OUT.exists():
+            print("ERROR=artifacts missing; run without --skip-build", flush=True)
+            return 1
         ensure_release(args.tag)
         upload(args.tag)
         print("STATUS=ok", flush=True)

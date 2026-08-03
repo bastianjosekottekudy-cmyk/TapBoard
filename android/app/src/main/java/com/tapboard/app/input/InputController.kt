@@ -1,18 +1,15 @@
 package com.tapboard.app.input
 
 import com.tapboard.app.bluetooth.BluetoothHidManager
-import com.tapboard.app.connection.ConnectionMode
 import com.tapboard.app.connection.ConnectionState
-import com.tapboard.app.wifi.WifiClient
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Shared input path so Bluetooth HID and Wi‑Fi feel identical.
+ * Bluetooth HID input path for touchpad and keyboard.
  */
 class InputController(
     private val state: StateFlow<ConnectionState>,
     private val bluetooth: BluetoothHidManager,
-    private val wifi: WifiClient,
     private val sensitivityProvider: () -> Float,
     private val invertScrollProvider: () -> Boolean
 ) {
@@ -20,10 +17,11 @@ class InputController(
     @Volatile private var modifierMask: Int = 0
     private val pressedKeys = LinkedHashSet<Int>()
 
-    private val activeMode: ConnectionMode?
-        get() = (state.value as? ConnectionState.Connected)?.mode
+    private val isConnected: Boolean
+        get() = state.value is ConnectionState.Connected
 
     fun move(dx: Float, dy: Float) {
+        if (!isConnected) return
         val s = sensitivityProvider()
         var rdx = (dx * s).toInt()
         var rdy = (dy * s).toInt()
@@ -31,43 +29,30 @@ class InputController(
             rdx = if (dx < 0) -1 else if (dx > 0) 1 else 0
             rdy = if (dy < 0) -1 else if (dy > 0) 1 else 0
         }
-        when (activeMode) {
-            ConnectionMode.Bluetooth -> {
-                // Chunk large moves into HID signed-byte range
-                var remX = rdx
-                var remY = rdy
-                while (remX != 0 || remY != 0) {
-                    val sx = remX.coerceIn(-127, 127)
-                    val sy = remY.coerceIn(-127, 127)
-                    bluetooth.sendMouse(mouseButtons, sx, sy, 0)
-                    remX -= sx
-                    remY -= sy
-                }
-            }
-            ConnectionMode.Wifi -> wifi.sendMouse(rdx, rdy, mouseButtons, 0, 0)
-            null -> Unit
+        // Chunk large moves into HID signed-byte range
+        var remX = rdx
+        var remY = rdy
+        while (remX != 0 || remY != 0) {
+            val sx = remX.coerceIn(-127, 127)
+            val sy = remY.coerceIn(-127, 127)
+            bluetooth.sendMouse(mouseButtons, sx, sy, 0)
+            remX -= sx
+            remY -= sy
         }
     }
 
     fun scroll(vertical: Float, horizontal: Float = 0f) {
+        if (!isConnected) return
         val invert = if (invertScrollProvider()) -1 else 1
         val wheel = (vertical * invert).toInt().coerceIn(-15, 15)
-        val hwheel = (horizontal * invert).toInt().coerceIn(-15, 15)
-        if (wheel == 0 && hwheel == 0) return
-        when (activeMode) {
-            ConnectionMode.Bluetooth -> bluetooth.sendMouse(mouseButtons, 0, 0, wheel)
-            ConnectionMode.Wifi -> wifi.sendMouse(0, 0, mouseButtons, wheel, hwheel)
-            null -> Unit
-        }
+        if (wheel == 0) return
+        bluetooth.sendMouse(mouseButtons, 0, 0, wheel)
     }
 
     fun setButton(mask: Int, down: Boolean) {
+        if (!isConnected) return
         mouseButtons = if (down) mouseButtons or mask else mouseButtons and mask.inv()
-        when (activeMode) {
-            ConnectionMode.Bluetooth -> bluetooth.sendMouse(mouseButtons, 0, 0, 0)
-            ConnectionMode.Wifi -> wifi.sendMouse(0, 0, mouseButtons, 0, 0)
-            null -> Unit
-        }
+        bluetooth.sendMouse(mouseButtons, 0, 0, 0)
     }
 
     fun click(mask: Int = BUTTON_LEFT) {
@@ -82,12 +67,12 @@ class InputController(
 
     fun keyDown(hid: Int) {
         pressedKeys.add(hid)
-        flushKeyboard(wifiDown = true, hid = hid)
+        flushKeyboard()
     }
 
     fun keyUp(hid: Int) {
         pressedKeys.remove(hid)
-        flushKeyboard(wifiDown = false, hid = hid)
+        flushKeyboard()
     }
 
     fun tapKey(hid: Int, extraMods: Int = 0) {
@@ -108,19 +93,10 @@ class InputController(
         text.forEach { typeChar(it) }
     }
 
-    private fun flushKeyboard(wifiDown: Boolean? = null, hid: Int? = null) {
-        when (activeMode) {
-            ConnectionMode.Bluetooth -> {
-                val keys = pressedKeys.take(6).toIntArray()
-                bluetooth.sendKeyboard(modifierMask, *keys)
-            }
-            ConnectionMode.Wifi -> {
-                if (hid != null && wifiDown != null) {
-                    wifi.sendKey(hid, modifierMask, wifiDown)
-                }
-            }
-            null -> Unit
-        }
+    private fun flushKeyboard() {
+        if (!isConnected) return
+        val keys = pressedKeys.take(6).toIntArray()
+        bluetooth.sendKeyboard(modifierMask, *keys)
     }
 
     companion object {

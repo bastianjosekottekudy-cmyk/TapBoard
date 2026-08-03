@@ -1,7 +1,7 @@
 package com.tapboard.app.input
 
 /**
- * HID usage IDs (Keyboard/Keypad page 0x07) shared by BT reports and WiFi protocol.
+ * HID usage IDs (Keyboard/Keypad page 0x07) for Bluetooth HID reports.
  */
 object HidKeyCodes {
     const val A = 4
@@ -86,7 +86,7 @@ object HidKeyCodes {
     const val VOLUME_UP = 128
     const val VOLUME_DOWN = 129
 
-    // Consumer page helpers mapped by companion / media path
+    // Consumer page helpers for media keys
     const val MEDIA_PLAY_PAUSE = 0xCD
     const val MEDIA_NEXT = 0xB5
     const val MEDIA_PREV = 0xB6

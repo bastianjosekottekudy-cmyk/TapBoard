@@ -87,7 +87,7 @@ class BluetoothHidManager(private val context: Context) {
                         cont.resume(
                             Result.failure(
                                 IllegalStateException(
-                                    "This phone’s Bluetooth stack rejected HID registration. Use Wi‑Fi mode."
+                                    "This phone’s Bluetooth stack rejected HID registration."
                                 )
                             )
                         )

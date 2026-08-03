@@ -1,62 +1,45 @@
 # TapBoard
 
-Turn your Android phone into a Bluetooth + WiFi keyboard and mouse for PCs, Chromebooks, and other HID-capable hosts.
+Bluetooth keyboard and mouse for Android — turn your phone into a remote HID input device for PCs, Chromebooks, TVs, and other hosts that accept Bluetooth keyboards.
 
 ## Features
 
-- **Bluetooth HID** — pairs like a real keyboard/mouse (no host software)
-- **WiFi mode** — low-latency LAN control via **TapBoard Companion**
-- Touchpad with gestures, on-screen keyboard, media / presenter controls
-- Material 3 UI, Play Store–oriented permissions and privacy posture
+- **Bluetooth HID** — pairs like a real keyboard/mouse (no PC software)
+- Touchpad with gestures, on-screen keyboard
+- Material 3 UI
 
 ## Download
 
 | File | Link |
 |------|------|
 | **Android APK** | https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/TapBoard.apk |
-| **Windows Companion** | https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/tapboard-companion.exe |
-| **Releases page** | https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest |
+| **Releases** | https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest |
 
-Rebuild + replace both assets on GitHub Releases:
+Rebuild + replace the APK on GitHub Releases:
 
 ```bash
 python scripts/publish_release.py
 ```
-
-That builds the signed APK + companion `.exe` and uploads them with `--clobber` (replaces previous files on the release).
 
 ## Repository layout
 
 | Path | Description |
 |------|-------------|
 | `android/` | Kotlin + Jetpack Compose app (`com.tapboard.app`) |
-| `companion/` | Go desktop receiver (Windows GUI + tray) |
-| `protocol/` | WiFi protocol v1 specification |
-| `docs/` | Privacy policy, Play listing, release notes |
+| `docs/` | Privacy policy, Play listing |
+| `scripts/` | Release publish helper |
 
 ## Requirements
 
-- Android Studio Ladybug+ or JDK 17 with Android SDK 35
-- Phone: Android 9+ (API 28)
-- Companion: Go 1.22+ to build; Windows x64 binary for WiFi mode
+- Android Studio or JDK 17 + Android SDK 35
+- Phone: Android 9+ (API 28) with Bluetooth HID peripheral support (varies by OEM)
 
-## Build — Android
+## Build
 
 ```bash
 cd android
-./gradlew :app:assembleDebug
+./gradlew :app:assembleRelease
 ```
-
-## Build — Companion
-
-```bash
-cd companion
-go build -ldflags="-H windowsgui" -o tapboard-companion.exe .
-```
-
-## Protocol
-
-See [protocol/v1.md](protocol/v1.md). Discovery UDP `19528`, session TCP `19529`.
 
 ## License
 
