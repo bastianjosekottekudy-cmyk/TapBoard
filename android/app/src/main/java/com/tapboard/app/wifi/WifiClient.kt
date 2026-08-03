@@ -16,10 +16,14 @@ import java.net.InterfaceAddress
 import java.net.NetworkInterface
 import java.net.SocketTimeoutException
 import java.util.Collections
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 
 class WifiClient(private val appContext: Context) {
     private val sessionRef = AtomicReference<WifiSession?>(null)
+    private val writeExecutor = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "tapboard-wifi-io").apply { isDaemon = true }
+    }
 
     val isConnected: Boolean get() = sessionRef.get()?.isConnected == true
 
@@ -153,36 +157,40 @@ class WifiClient(private val appContext: Context) {
 
     fun sendMouse(dx: Int, dy: Int, buttons: Int, wheel: Int, hwheel: Int = 0) {
         val session = sessionRef.get() ?: return
-        runCatching {
-            session.send(
-                JSONObject()
-                    .put("v", Protocol.VERSION)
-                    .put("type", "mouse")
-                    .put("dx", dx)
-                    .put("dy", dy)
-                    .put("buttons", buttons)
-                    .put("wheel", wheel)
-                    .put("hwheel", hwheel)
-            )
+        writeExecutor.execute {
+            runCatching {
+                session.send(
+                    JSONObject()
+                        .put("v", Protocol.VERSION)
+                        .put("type", "mouse")
+                        .put("dx", dx)
+                        .put("dy", dy)
+                        .put("buttons", buttons)
+                        .put("wheel", wheel)
+                        .put("hwheel", hwheel)
+                )
+            }
         }
     }
 
     fun sendKey(hid: Int, mods: Int, down: Boolean) {
         val session = sessionRef.get() ?: return
-        runCatching {
-            session.send(
-                JSONObject()
-                    .put("v", Protocol.VERSION)
-                    .put("type", "key")
-                    .put("hid", hid)
-                    .put("mods", mods)
-                    .put("down", down)
-            )
+        writeExecutor.execute {
+            runCatching {
+                session.send(
+                    JSONObject()
+                        .put("v", Protocol.VERSION)
+                        .put("type", "key")
+                        .put("hid", hid)
+                        .put("mods", mods)
+                        .put("down", down)
+                )
+            }
         }
     }
 
     fun disconnect() {
-        disconnectInternal()
+        writeExecutor.execute { disconnectInternal() }
     }
 
     private fun disconnectInternal() {

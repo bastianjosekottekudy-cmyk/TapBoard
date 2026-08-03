@@ -240,7 +240,7 @@ func (s *CompanionServer) handleSession(conn net.Conn) {
 			return
 		case "mouse":
 			if !authed {
-				return
+				continue
 			}
 			dx := asInt(msg["dx"])
 			dy := asInt(msg["dy"])
@@ -259,9 +259,9 @@ func (s *CompanionServer) handleSession(conn net.Conn) {
 			applyButtons(&buttons, btn)
 		case "key":
 			if !authed {
-				return
+				continue
 			}
-			HandleKey(asInt(msg["hid"]), asInt(msg["mods"]), msg["down"] == true)
+			HandleKey(asInt(msg["hid"]), asInt(msg["mods"]), asBool(msg["down"]))
 		}
 	}
 }
@@ -325,8 +325,26 @@ func asInt(v any) int {
 	case string:
 		i, _ := strconv.Atoi(t)
 		return i
+	case bool:
+		if t {
+			return 1
+		}
+		return 0
 	default:
 		return 0
+	}
+}
+
+func asBool(v any) bool {
+	switch t := v.(type) {
+	case bool:
+		return t
+	case float64:
+		return t != 0
+	case string:
+		return t == "true" || t == "1"
+	default:
+		return false
 	}
 }
 

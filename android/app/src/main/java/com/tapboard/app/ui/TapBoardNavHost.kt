@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material.icons.outlined.PresentToAll
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material3.Icon
@@ -24,7 +23,6 @@ import androidx.navigation.compose.rememberNavController
 import com.tapboard.app.ui.screens.ConnectScreen
 import com.tapboard.app.ui.screens.HelpScreen
 import com.tapboard.app.ui.screens.KeyboardScreen
-import com.tapboard.app.ui.screens.MediaScreen
 import com.tapboard.app.ui.screens.OnboardingScreen
 import com.tapboard.app.ui.screens.SettingsScreen
 import com.tapboard.app.ui.screens.TouchpadScreen
@@ -33,7 +31,6 @@ private enum class Dest(val route: String, val label: String) {
     Connect("connect", "Connect"),
     Touchpad("touchpad", "Pad"),
     Keyboard("keyboard", "Keys"),
-    Media("media", "Media"),
     Settings("settings", "Settings")
 }
 
@@ -73,7 +70,6 @@ fun TapBoardNavHost(viewModel: TapBoardViewModel) {
                                         Dest.Connect -> Icons.Outlined.Link
                                         Dest.Touchpad -> Icons.Outlined.TouchApp
                                         Dest.Keyboard -> Icons.Outlined.Keyboard
-                                        Dest.Media -> Icons.Outlined.PresentToAll
                                         Dest.Settings -> Icons.Outlined.Settings
                                     },
                                     contentDescription = dest.label
@@ -99,7 +95,6 @@ fun TapBoardNavHost(viewModel: TapBoardViewModel) {
             }
             composable(Dest.Touchpad.route) { TouchpadScreen(viewModel) }
             composable(Dest.Keyboard.route) { KeyboardScreen(viewModel) }
-            composable(Dest.Media.route) { MediaScreen(viewModel) }
             composable(Dest.Settings.route) {
                 SettingsScreen(
                     viewModel = viewModel,
