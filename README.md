@@ -15,7 +15,7 @@ Bluetooth keyboard and mouse for Android — turn your phone into a remote HID i
 | **Android APK** | https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/TapBoard.apk |
 | **Releases** | https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest |
 
-Rebuild + replace the APK on GitHub Releases:
+Rebuild + replace the APK on GitHub Releases (run after every Android app change):
 
 ```bash
 python scripts/publish_release.py

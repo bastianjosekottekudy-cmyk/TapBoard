@@ -1,0 +1,21 @@
+---
+description: After Android app changes, rebuild and publish TapBoard.apk to GitHub Releases
+alwaysApply: true
+---
+
+# Publish APK on every app change
+
+Whenever you commit or push changes that affect the Android app (anything under `android/`, or release/version metadata the APK depends on):
+
+1. Finish the git commit/push first (use the commit-and-push skill when the user asked to commit/push).
+2. Immediately run:
+
+```powershell
+python scripts/publish_release.py
+```
+
+3. Confirm output includes `STATUS=ok` and the APK URL.
+
+Do this automatically — do not wait for the user to ask to republish. Skip only for pure docs-only commits that do not change the built APK.
+
+The script rebuilds the signed release APK and replaces the asset on the latest GitHub Release (`v1.0.0` by default).
