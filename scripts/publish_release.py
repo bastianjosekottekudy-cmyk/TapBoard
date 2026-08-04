@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Build TapBoard Android APK and upload to GitHub Releases (replace).
+"""Build TapBoard APK and replace the asset on the fixed GitHub Release tag.
 
-Local-only release path — do not use GitHub Actions for this.
+No version bump. Reuses the same release (default v1.0.0) and overwrites
+TapBoard.apk with --clobber. Bump android versionCode/versionName only when
+the user explicitly asks.
 
 Usage:
   python scripts/publish_release.py
   python scripts/publish_release.py --tag v1.0.0
   python scripts/publish_release.py --skip-build
-
-After normal commits, the agent runs this unless the user explicitly skips publish.
 
 Exit codes:
   0 ok
@@ -35,6 +35,12 @@ def run(cmd: list[str], cwd: Path | None = None, env: dict | None = None) -> Non
     merged = os.environ.copy()
     if env:
         merged.update(env)
+    # Ensure Android SDK is visible for Gradle
+    if "ANDROID_HOME" not in merged:
+        local_app = os.environ.get("LOCALAPPDATA") or ""
+        sdk = Path(local_app) / "Android" / "Sdk"
+        if sdk.is_dir():
+            merged["ANDROID_HOME"] = str(sdk)
     subprocess.run(cmd, cwd=str(cwd or ROOT), check=True, env=merged)
 
 
@@ -62,7 +68,8 @@ def ensure_release(tag: str) -> None:
     notes = (
         "## TapBoard (Bluetooth only)\n\n"
         "- `TapBoard.apk` — Android Bluetooth keyboard & mouse\n\n"
-        "Asset is replaced on every publish."
+        "Same release tag is reused; the APK asset is replaced on every publish. "
+        "App versionCode is not bumped automatically."
     )
     run(
         [
@@ -80,14 +87,12 @@ def ensure_release(tag: str) -> None:
 
 
 def upload(tag: str) -> None:
-    # Remove obsolete companion exe from the release if present
     subprocess.run(
         ["gh", "release", "delete-asset", tag, "tapboard-companion.exe", "--yes"],
         cwd=str(ROOT),
         capture_output=True,
     )
     run(["gh", "release", "upload", tag, str(APK_OUT), "--clobber"])
-    # Refresh release notes to Bluetooth-only
     subprocess.run(
         [
             "gh",
@@ -97,7 +102,7 @@ def upload(tag: str) -> None:
             "--notes",
             "## TapBoard (Bluetooth only)\n\n"
             "- `TapBoard.apk` — Android Bluetooth keyboard & mouse\n\n"
-            "No Windows companion. Pair your phone as a Bluetooth keyboard/mouse.",
+            "Latest build replaces this asset. Pair as a Bluetooth keyboard/mouse — no companion app.",
         ],
         cwd=str(ROOT),
         check=False,
@@ -110,8 +115,10 @@ def upload(tag: str) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--tag", default=DEFAULT_TAG)
+    parser = argparse.ArgumentParser(
+        description="Build APK and replace GitHub Release asset (no version bump)."
+    )
+    parser.add_argument("--tag", default=DEFAULT_TAG, help=f"Release tag (default {DEFAULT_TAG})")
     parser.add_argument("--skip-build", action="store_true")
     args = parser.parse_args()
     try:

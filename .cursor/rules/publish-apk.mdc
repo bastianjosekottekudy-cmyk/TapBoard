@@ -1,25 +1,36 @@
 ---
-description: On commit, rebuild APK via Python and replace GitHub latest release (no Actions)
+description: After commits, publish APK via Python — no GH Actions, no auto version bump
 alwaysApply: true
 ---
 
-# Publish APK after every commit (Python only — no GitHub Actions)
+# APK publish (no GitHub Actions)
 
-Do **not** create or use GitHub Actions workflows for building/releasing the APK.
+Do **not** create or restore `.github/workflows` release workflows. Publishing is local Python only.
 
-Whenever the user commits (or commit-and-pushes) on this repo:
+## After every commit/push that changes the app
 
-1. Finish the git commit/push first (commit-and-push skill when applicable).
-2. Unless the user **explicitly** says to skip publishing (e.g. “don’t publish”, “skip APK”, “no release”), immediately run:
+When the user asks to commit/push (commit-and-push skill), or you commit Android changes:
+
+1. Complete commit + push first.
+2. Run (unless a post-commit hook already did it successfully in the same turn):
 
 ```powershell
 python scripts/publish_release.py
 ```
 
-3. Confirm `STATUS=ok` and that `TapBoard.apk` was replaced on the latest GitHub Release.
+3. Confirm `STATUS=ok`.
 
-Run this for normal commits — including Android app changes and any commit that should ship a matching APK. Skip only when the user explicitly opts out, or for commits that cannot affect the APK and the user is only editing docs/rules with no app change **and** they did not ask to publish.
+Skip publish only for commits that do not touch `android/` (docs/rules/scripts-only).
 
-Default bias: **publish after commit**. Prefer publishing when unsure.
+## Versioning
 
-The script builds the signed release APK locally and `--clobber`s the asset on release tag `v1.0.0` (latest).
+- **Do not** change `versionCode` / `versionName` in `android/app/build.gradle.kts` unless the user **explicitly** asks to bump/update the version.
+- Keep replacing the APK on the same GitHub release tag (`v1.0.0` by default) with `--clobber`.
+
+## Hooks (local)
+
+Repo uses `.githooks/post-commit` → `scripts/publish_release.py` when HEAD includes `android/`. Install once per clone:
+
+```powershell
+python scripts/install_git_hooks.py
+```

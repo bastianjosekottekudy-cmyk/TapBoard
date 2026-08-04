@@ -15,11 +15,19 @@ Bluetooth keyboard and mouse for Android — turn your phone into a remote HID i
 | **Android APK** | https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest/download/TapBoard.apk |
 | **Releases** | https://github.com/bastianjosekottekudy-cmyk/TapBoard/releases/latest |
 
-Rebuild + replace the latest GitHub Release APK locally (no GitHub Actions). Run after commits unless told to skip:
+Rebuild + replace the APK on GitHub Releases (same tag; **no** auto version bump):
 
 ```bash
 python scripts/publish_release.py
 ```
+
+Enable auto-publish after commits that touch `android/`:
+
+```bash
+python scripts/install_git_hooks.py
+```
+
+Do not use GitHub Actions for releases — local script only.
 
 ## Repository layout
 
