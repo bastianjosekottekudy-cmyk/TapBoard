@@ -1,21 +1,27 @@
 ---
-description: After Android app changes, rebuild and publish TapBoard.apk to GitHub Releases
+description: After Android app changes, APK is published via GitHub Actions (local script is fallback)
 alwaysApply: true
 ---
 
-# Publish APK on every app change
+# Publish APK on Android changes
 
-Whenever you commit or push changes that affect the Android app (anything under `android/`, or release/version metadata the APK depends on):
+## Preferred: GitHub Actions
 
-1. Finish the git commit/push first (use the commit-and-push skill when the user asked to commit/push).
-2. Immediately run:
+Pushing to `master` with changes under `android/` triggers `.github/workflows/release-apk.yml`, which builds the signed APK and replaces `TapBoard.apk` on the GitHub Release.
+
+After commit/push of Android changes:
+
+1. Do **not** also run `python scripts/publish_release.py` unless the user wants an immediate local upload or CI failed.
+2. Optionally confirm the workflow: `gh run list --workflow=release-apk.yml -L 1`
+
+## Local fallback
 
 ```powershell
 python scripts/publish_release.py
 ```
 
-3. Confirm output includes `STATUS=ok` and the APK URL.
+Use when secrets/CI are broken, or the user explicitly asks to publish now without waiting for Actions.
 
-Do this automatically — do not wait for the user to ask to republish. Skip only for pure docs-only commits that do not change the built APK.
+## Secrets
 
-The script rebuilds the signed release APK and replaces the asset on the latest GitHub Release (`v1.0.0` by default).
+Repo secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (see `docs/play-publish.md`). Never commit the keystore or `keystore.properties`.
