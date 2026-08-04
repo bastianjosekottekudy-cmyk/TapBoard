@@ -1,27 +1,25 @@
 ---
-description: After Android app changes, APK is published via GitHub Actions (local script is fallback)
+description: On commit, rebuild APK via Python and replace GitHub latest release (no Actions)
 alwaysApply: true
 ---
 
-# Publish APK on Android changes
+# Publish APK after every commit (Python only — no GitHub Actions)
 
-## Preferred: GitHub Actions
+Do **not** create or use GitHub Actions workflows for building/releasing the APK.
 
-Pushing to `master` with changes under `android/` triggers `.github/workflows/release-apk.yml`, which builds the signed APK and replaces `TapBoard.apk` on the GitHub Release.
+Whenever the user commits (or commit-and-pushes) on this repo:
 
-After commit/push of Android changes:
-
-1. Do **not** also run `python scripts/publish_release.py` unless the user wants an immediate local upload or CI failed.
-2. Optionally confirm the workflow: `gh run list --workflow=release-apk.yml -L 1`
-
-## Local fallback
+1. Finish the git commit/push first (commit-and-push skill when applicable).
+2. Unless the user **explicitly** says to skip publishing (e.g. “don’t publish”, “skip APK”, “no release”), immediately run:
 
 ```powershell
 python scripts/publish_release.py
 ```
 
-Use when secrets/CI are broken, or the user explicitly asks to publish now without waiting for Actions.
+3. Confirm `STATUS=ok` and that `TapBoard.apk` was replaced on the latest GitHub Release.
 
-## Secrets
+Run this for normal commits — including Android app changes and any commit that should ship a matching APK. Skip only when the user explicitly opts out, or for commits that cannot affect the APK and the user is only editing docs/rules with no app change **and** they did not ask to publish.
 
-Repo secrets: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (see `docs/play-publish.md`). Never commit the keystore or `keystore.properties`.
+Default bias: **publish after commit**. Prefer publishing when unsure.
+
+The script builds the signed release APK locally and `--clobber`s the asset on release tag `v1.0.0` (latest).

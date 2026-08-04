@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Build TapBoard Android APK and upload to GitHub Releases (replace).
 
+Local-only release path — do not use GitHub Actions for this.
+
 Usage:
   python scripts/publish_release.py
   python scripts/publish_release.py --tag v1.0.0
   python scripts/publish_release.py --skip-build
+
+After normal commits, the agent runs this unless the user explicitly skips publish.
 
 Exit codes:
   0 ok
