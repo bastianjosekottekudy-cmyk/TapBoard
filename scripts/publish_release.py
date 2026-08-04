@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Build TapBoard APK and replace the asset on the fixed GitHub Release tag.
 
-No version bump. Reuses the same release (default v1.0.0) and overwrites
-TapBoard.apk with --clobber. Bump android versionCode/versionName only when
-the user explicitly asks.
+No automatic version bump. Reuses DEFAULT_TAG and overwrites TapBoard.apk
+with --clobber. Bump android versionCode/versionName only when the user asks;
+then update DEFAULT_TAG to match (e.g. v1.0.1).
 
 Usage:
   python scripts/publish_release.py
-  python scripts/publish_release.py --tag v1.0.0
+  python scripts/publish_release.py --tag v1.0.1
   python scripts/publish_release.py --skip-build
 
 Exit codes:
@@ -26,7 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ANDROID = ROOT / "android"
 DIST = ROOT / "dist"
-DEFAULT_TAG = "v1.0.0"
+DEFAULT_TAG = "v1.0.1"
 APK_OUT = DIST / "TapBoard.apk"
 
 

@@ -7,8 +7,8 @@ python scripts/publish_release.py
 ```
 
 - Builds the signed release APK
-- Replaces `TapBoard.apk` on release tag `v1.0.0` (same tag every time)
-- Does **not** bump `versionCode` / `versionName` unless you change them on purpose
+- Replaces `TapBoard.apk` on release tag `v1.0.1` (same tag reused until you bump)
+- Does **not** bump `versionCode` / `versionName` unless you ask
 
 ## Auto on commit
 
