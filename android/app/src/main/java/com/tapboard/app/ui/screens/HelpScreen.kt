@@ -80,7 +80,9 @@ fun HelpScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(20.dp))
             Section(
                 "Gestures",
-                "One finger move · tap = left click · long-press = right click · two-finger vertical drag = scroll."
+                "One finger move · tap = left click · hold then drag = click-and-drag · " +
+                    "two-finger scroll · two-finger tap = right click. " +
+                    "You can also hold the Left button while dragging on the pad."
             )
         }
     }

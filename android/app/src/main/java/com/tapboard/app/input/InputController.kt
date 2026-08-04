@@ -19,6 +19,7 @@ class InputController(
     @Volatile private var mouseButtons: Int = 0
     @Volatile private var modifierMask: Int = 0
     private val pressedKeys = LinkedHashSet<Int>()
+    private var scrollRemainder = 0f
 
     private val isConnected: Boolean
         get() = state.value is ConnectionState.Connected
@@ -44,11 +45,19 @@ class InputController(
         }
     }
 
+    /**
+     * @param vertical wheel notches (fractional OK). Positive finger-down should be passed as
+     *   positive screen delta / scale from the touchpad; this method maps that to HID wheel.
+     */
     fun scroll(vertical: Float, horizontal: Float = 0f) {
         if (!isConnected) return
+        if (vertical == 0f) return
         val invert = if (invertScrollProvider()) -1 else 1
-        val wheel = (vertical * invert).toInt().coerceIn(-15, 15)
+        // HID wheel: positive typically scrolls up — invert so finger-down scrolls down.
+        scrollRemainder += -vertical * invert
+        val wheel = scrollRemainder.toInt().coerceIn(-15, 15)
         if (wheel == 0) return
+        scrollRemainder -= wheel.toFloat()
         bluetooth.sendMouse(mouseButtons, 0, 0, wheel)
     }
 
@@ -117,6 +126,7 @@ class InputController(
         modifierMask = 0
         pressedKeys.clear()
         mouseButtons = 0
+        scrollRemainder = 0f
         if (isConnected) {
             bluetooth.sendKeyboard(0)
             bluetooth.sendMouse(0, 0, 0, 0)
@@ -128,6 +138,7 @@ class InputController(
         modifierMask = 0
         pressedKeys.clear()
         mouseButtons = 0
+        scrollRemainder = 0f
     }
 
     private fun flushKeyboard() {
