@@ -26,3 +26,8 @@ dist/
 
 # Secrets
 .env
+
+# Play Console API
+android/play-service-account.json
+**/play-service-account.json
+

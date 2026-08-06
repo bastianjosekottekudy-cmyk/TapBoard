@@ -39,7 +39,7 @@ Do not use GitHub Actions for releases — local script only.
 
 ## Requirements
 
-- Android Studio or JDK 17 + Android SDK 35
+- Android Studio or JDK 17 + Android SDK 36
 - Phone: Android 9+ (API 28) with Bluetooth HID peripheral support (varies by OEM)
 
 ## Build

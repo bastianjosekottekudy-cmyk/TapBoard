@@ -38,4 +38,6 @@ Everyone
 
 - Icon: `docs/play-assets/icon-512.png`
 - Feature graphic: `docs/play-assets/feature-graphic-1024x500.png`
+- Phone screenshots: `docs/play-assets/phone-*.png`
+- 10-inch tablet screenshots (1920×1080, 16:9): `docs/play-assets/tablet-10-*.png`
 - Privacy: https://gist.github.com/bastianjosekottekudy-cmyk/68a67bcfedfb30ac839dfa80686f1e00

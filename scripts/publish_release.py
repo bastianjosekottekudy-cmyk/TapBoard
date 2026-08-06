@@ -26,7 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ANDROID = ROOT / "android"
 DIST = ROOT / "dist"
-DEFAULT_TAG = "v1.0.1"
+DEFAULT_TAG = "v1.0.3"
 APK_OUT = DIST / "TapBoard.apk"
 
 
